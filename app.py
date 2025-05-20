@@ -8,6 +8,7 @@ import pickle
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from tensorflow.keras.models import load_model
 from datetime import timedelta
 import os
@@ -36,7 +37,7 @@ def carregar_dados():
 
 @st.cache_data
 def carregar_eventos():
-    df_eventos = pd.read_csv("data/eventos_petroleo.csv")
+    df_eventos = pd.read_csv("data/eventos_petroleo.csv", encoding="latin1")
     df_eventos["data"] = pd.to_datetime(df_eventos["data"])
     return df_eventos
 
@@ -126,30 +127,21 @@ with tabs[0]:
 with tabs[1]:
     st.title("📊 Avaliação de Modelos")
 
-    # Tabela de métricas salvas
-    if os.path.exists("resultados/metricas_modelos.csv"):
-        metricas = pd.read_csv("resultados/metricas_modelos.csv").round(2)
-        st.subheader("Métricas")
-        st.dataframe(metricas, use_container_width=True, hide_index=True)
+    # Cálculo de métricas incluindo LSTM
+    st.subheader("Métricas")
+    metricas_modelos = []
 
-    # Gráfico comparativo salvo durante o treinamento
-    if os.path.exists("resultados/grafico_comparativo.png"):
-        st.subheader("Comparativo Visual (Modelos Tradicionais)")
-        st.image("resultados/grafico_comparativo.png", use_column_width=True)
-
-    # Comparação linha‑a‑linha (histórico completo)
-    st.subheader("Comparar valores reais vs previstos (histórico)")
-
-    comparacao = pd.DataFrame(
-        {"Data": df["data"].dt.strftime("%d/%m/%y"), "Real": df["preco"].round(2)}
-    )
-
-    # Modelos clássicos
     for nome, modelo in modelos.items():
         if modelo is not None:
-            comparacao[nome] = np.round(modelo.predict(dias), 2)
+            y_pred = modelo.predict(dias)
+            metricas_modelos.append([
+                nome,
+                round(mean_squared_error(df["preco"], y_pred), 2),
+                round(mean_absolute_error(df["preco"], y_pred), 2),
+                round(r2_score(df["preco"], y_pred), 2),
+            ])
 
-    # Adicionando predição do LSTM na mesma escala
+    # LSTM
     try:
         lstm = carregar_lstm()
         scaler = carregar_scaler()
@@ -157,10 +149,32 @@ with tabs[1]:
         serie = df["preco"].values.reshape(-1, 1)
         serie_scaled = scaler.transform(serie)
         X_lstm = np.array([serie_scaled[i - window : i] for i in range(window, len(serie_scaled))])
+        y_lstm_true = serie[window:].flatten()
         y_lstm_pred = scaler.inverse_transform(lstm.predict(X_lstm, verbose=0)).flatten()
-        # Preencher início com NaNs para alinhar tamanho
-        comparacao["LSTM"] = [np.nan] * window + list(np.round(y_lstm_pred, 2))
+        metricas_modelos.append([
+            "LSTM",
+            round(mean_squared_error(y_lstm_true, y_lstm_pred), 2),
+            round(mean_absolute_error(y_lstm_true, y_lstm_pred), 2),
+            round(r2_score(y_lstm_true, y_lstm_pred), 2),
+        ])
     except Exception:
+        pass
+
+    df_metricas = pd.DataFrame(metricas_modelos, columns=["Modelo", "MSE", "MAE", "R²"])
+    st.dataframe(df_metricas, use_container_width=True, hide_index=True)
+
+    # Comparação linha‑a‑linha
+    st.subheader("Comparar valores reais vs previstos (histórico)")
+    comparacao = pd.DataFrame(
+        {"Data": df["data"].dt.strftime("%d/%m/%y"), "Real": df["preco"].round(2)}
+    )
+    for nome, modelo in modelos.items():
+        if modelo is not None:
+            comparacao[nome] = np.round(modelo.predict(dias), 2)
+
+    try:
+        comparacao["LSTM"] = [np.nan] * window + list(np.round(y_lstm_pred, 2))
+    except:
         pass
 
     st.dataframe(comparacao.tail(10), use_container_width=True, hide_index=True)
@@ -176,8 +190,7 @@ with tabs[2]:
     evento_label = st.selectbox("Selecione um evento:", df_eventos["evento_dropdown"].tolist())
     evento_row = df_eventos[df_eventos["evento_dropdown"] == evento_label].iloc[0]
     evento_data = evento_row["data"]
-    descricao = evento_row["descricao"] if "descricao" in evento_row else ""
-
+    descricao = evento_row.get("descricao", "")
     janela = st.slider("Dias antes e depois do evento", 5, 60, 15)
 
     df_plot = df[
@@ -200,11 +213,12 @@ with tabs[2]:
         ax.legend()
         st.pyplot(fig)
 
+        if descricao:
+            st.markdown(f"**Resumo do Evento:** {descricao}")
+
         st.dataframe(
             df_plot[["Data", "Preço"]], use_container_width=True, hide_index=True
         )
-        if descricao:
-            st.markdown(f"**Resumo do Evento:** {descricao}")
 
 # -------------------------------------------------------------------
 # 👨‍💻 DESENVOLVEDORES
