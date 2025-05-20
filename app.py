@@ -37,7 +37,7 @@ def carregar_dados():
 
 @st.cache_data
 def carregar_eventos():
-    df_eventos = pd.read_csv("data/eventos_petroleo.csv", encoding="latin1")
+    df_eventos = pd.read_csv("data/eventos_petroleo.csv", encoding="utf-8")
     df_eventos["data"] = pd.to_datetime(df_eventos["data"])
     return df_eventos
 

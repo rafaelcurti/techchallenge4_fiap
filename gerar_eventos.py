@@ -60,5 +60,10 @@ df = pd.DataFrame(eventos)
 df["data"] = pd.to_datetime(df["data"])
 
 os.makedirs("data", exist_ok=True)
-df.to_csv("data/eventos_petroleo.csv", index=False)
-print("Arquivo data/eventos_petroleo.csv criado com sucesso.")
+
+# 👉 grave com utf-8-sig
+df.to_csv("data/eventos_petroleo.csv",
+          index=False,
+          encoding="utf-8-sig")
+
+print("Arquivo data/eventos_petroleo.csv criado com sucesso (UTF-8-SIG).")
