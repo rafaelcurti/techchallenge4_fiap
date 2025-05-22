@@ -82,7 +82,7 @@ model_lstm = Sequential([
 model_lstm.compile(optimizer='adam', loss='mse')
 model_lstm.fit(X_lstm, y_lstm, epochs=50, batch_size=16, verbose=0, callbacks=[EarlyStopping(patience=5)])
 
-model_lstm.save("modelos/melhor_modelo_lstm.keras")
+model_lstm.save("modelos/melhor_modelo_lstm", save_format="tf")
 with open("modelos/scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
 

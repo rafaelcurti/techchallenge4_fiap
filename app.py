@@ -60,7 +60,7 @@ def carregar_scaler():
 
 @st.cache_resource
 def carregar_lstm():
-    return load_model("modelos/melhor_modelo_lstm.keras")
+    return load_model("modelos/melhor_modelo_lstm")
 
 # ====================== DADOS BASE COMPLETA =========================
 df = carregar_dados()

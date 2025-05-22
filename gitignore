@@ -1,3 +1,6 @@
+# Evite ignorar os modelos em pasta (como LSTM)
+!modelos/melhor_modelo_lstm/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
