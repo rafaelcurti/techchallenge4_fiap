@@ -28,7 +28,7 @@ Avaliar o comportamento do preço do petróleo Brent ao longo do tempo, utilizan
 ## 📂 Estrutura do projeto
 
 ```
-├── app.py                      # Streamlit principal
+├── app.py                     # Streamlit principal
 ├── treinar_modelos.py         # Treinamento e avaliação de modelos
 ├── requirements.txt           # Dependências do projeto
 ├── data/
@@ -81,12 +81,6 @@ streamlit run app.py
    - Branch: `main`
    - Arquivo principal: `app.py`
 5. Clique em **Deploy**
-
----
-
-## 📸 Capturas do Dashboard
-
-> Inclua aqui prints das abas principais, se desejar.
 
 ---
 
